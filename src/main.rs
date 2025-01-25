@@ -16,6 +16,18 @@ impl Ray {
 
 trait Sdf {
     fn distance(&self, point: Vec3) -> f32;
+    fn normal(&self, point: Vec3) -> Vec3 {
+        let eps = 0.0001;
+        let x = Vec3::new(eps, 0.0, 0.0);
+        let y = Vec3::new(0.0, eps, 0.0);
+        let z = Vec3::new(0.0, 0.0, eps);
+        let normal = Vec3::new(
+            self.distance(point + x) - self.distance(point - x),
+            self.distance(point + y) - self.distance(point - y),
+            self.distance(point + z) - self.distance(point - z),
+        );
+        normal.normalize()
+    }
 }
 
 struct Sphere {
@@ -39,6 +51,14 @@ impl Sdf for Cube {
         let q = (point - self.center).abs() - Vec3::splat(self.size);
         q.max(Vec3::ZERO).length() + q.max(Vec3::ZERO).min(Vec3::ZERO).length()
     }
+}
+
+fn to_color(col: Vec3) -> [u8; 3] {
+    let ir = (255.99 * col.x) as u8;
+    let ig = (255.99 * col.y) as u8;
+    let ib = (255.99 * col.z) as u8;
+
+    [ir, ig, ib]
 }
 
 const WIDTH: u32 = 1920;
@@ -83,7 +103,10 @@ fn main() {
                     break;
                 }
                 if min_distance < 0.001 {
-                    img.put_pixel(u, v, Rgb([255, 0, 0]));
+                    let normal = shapes[0].normal(p);
+                    let color = (normal + Vec3::ONE) * 0.5;
+                    let color  = to_color(color);
+                    img.put_pixel(u, v, color.into());
                     break;
                 }
             }
