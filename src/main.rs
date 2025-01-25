@@ -43,6 +43,7 @@ impl Sdf for Cube {
 
 const WIDTH: u32 = 1920;
 const HEIGHT: u32 = 1080;
+const MAX_DEPTH : f32 = 20.0f32;
 
 fn main() {
     let mut img = RgbImage::new(WIDTH, HEIGHT);
@@ -69,7 +70,7 @@ fn main() {
 
 
             let mut p = ray.position;
-            for _ in 0 .. 100 {
+            loop {
                 let mut min_distance = f32::MAX;
                 for shape in &shapes {
                     let d = shape.distance(p);
@@ -78,6 +79,9 @@ fn main() {
                     }
                 }
                 p = p + ray.direction * min_distance;
+                if min_distance > MAX_DEPTH {
+                    break;
+                }
                 if min_distance < 0.001 {
                     img.put_pixel(u, v, Rgb([255, 0, 0]));
                     break;
