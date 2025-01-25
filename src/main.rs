@@ -1,4 +1,4 @@
-use image::{RgbImage, Rgb};
+use image::RgbImage;
 
 type Vec3 = glam::Vec3A;
 
@@ -75,7 +75,7 @@ fn main() {
 
     let cube = Cube {
         center: Vec3::new(-1.0, 0.0, 3.0),
-        size: 0.5,
+        size: 0.75,
     };
 
     let shapes : Vec<&dyn Sdf> = vec![&sphere, &cube];
