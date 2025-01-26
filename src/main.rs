@@ -67,6 +67,29 @@ const HEIGHT: u32 = 1080;
 const IMAGE_SIZE : u32 = WIDTH * HEIGHT;
 const MAX_DEPTH : f32 = 20.0f32;
 
+
+fn trace_ray(ray: Ray, shapes: &Vec<&dyn Sdf>) -> Vec3 {
+    let mut p = ray.position;
+        loop {
+            let mut min_distance = f32::MAX;
+            for shape in shapes {
+                let d = shape.distance(p);
+                if d < min_distance {
+                    min_distance = d;
+                }
+            }
+            if min_distance > MAX_DEPTH {
+                break;
+            }
+            p = p + ray.direction * min_distance;
+            if min_distance < 0.001 {
+                let normal = shapes[0].normal(p);
+                let color_vec = (normal + Vec3::ONE) * 0.5;
+                return color_vec;
+            }
+        }
+        Vec3::ZERO
+}
 fn main() {
     
     let sphere = Sphere {
@@ -92,26 +115,8 @@ fn main() {
         let y = (y as f32) / (HEIGHT as f32) * 2.0 - 1.0;
         let x = x * aspect_ratio;
         let ray = Ray::new(Vec3::new(0.0, 0.0, 0.0), Vec3::new(x, y, 1.0).normalize());
-        let mut p = ray.position;
-        loop {
-            let mut min_distance = f32::MAX;
-            for shape in &shapes {
-                let d = shape.distance(p);
-                if d < min_distance {
-                    min_distance = d;
-                }
-            }
-            if min_distance > MAX_DEPTH {
-                break;
-            }
-            p = p + ray.direction * min_distance;
-            if min_distance < 0.001 {
-                let normal = shapes[0].normal(p);
-                let color_vec = (normal + Vec3::ONE) * 0.5;
-                return to_color(color_vec);
-            }
-        }
-        [0, 0, 0]
+        trace_ray(ray, &shapes)
+        
     }
     ).collect();
     
@@ -119,7 +124,8 @@ fn main() {
     for (i, pixel) in result.iter().enumerate() { 
         let x = i as u32 % WIDTH;
         let y = i as u32 / WIDTH;
-        img.put_pixel(x, y, image::Rgb(*pixel));
+        let pixel = to_color(*pixel);
+        img.put_pixel(x, y, image::Rgb(pixel));
     }
     let elapsed = start.elapsed();
     println!("Elapsed: {:?}", elapsed);
