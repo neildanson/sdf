@@ -3,6 +3,13 @@ use rayon::prelude::*;
 
 type Vec3 = glam::Vec3A;
 
+const WIDTH: u32 = 1920;
+const HEIGHT: u32 = 1080;
+const IMAGE_SIZE: u32 = WIDTH * HEIGHT;
+const MAX_DEPTH: f32 = 20.0f32;
+const INV_WIDTH: f32 = 1.0 / WIDTH as f32;
+const INV_HEIGHT: f32 = 1.0 / HEIGHT as f32;
+
 #[derive(Debug)]
 struct Ray {
     position: Vec3,
@@ -65,10 +72,7 @@ fn to_color(col: Vec3) -> [u8; 3] {
     [ir, ig, ib]
 }
 
-const WIDTH: u32 = 1920;
-const HEIGHT: u32 = 1080;
-const IMAGE_SIZE: u32 = WIDTH * HEIGHT;
-const MAX_DEPTH: f32 = 20.0f32;
+
 
 fn trace_ray(ray: Ray, shapes: &Vec<&dyn Sdf>) -> Vec3 {
     let mut p = ray.position;
@@ -112,8 +116,8 @@ fn main() {
         .map(|pos| {
             let x = pos % WIDTH;
             let y = pos / WIDTH;
-            let x = (x as f32) / (WIDTH as f32) * 2.0 - 1.0;
-            let y = (y as f32) / (HEIGHT as f32) * 2.0 - 1.0;
+            let x = (x as f32) * INV_WIDTH * 2.0 - 1.0;
+            let y = (y as f32) * INV_HEIGHT * 2.0 - 1.0;
             let x = x * aspect_ratio;
             let ray = Ray::new(Vec3::new(0.0, 0.0, 0.0), Vec3::new(x, y, 1.0).normalize());
             trace_ray(ray, &shapes)
