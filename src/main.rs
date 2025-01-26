@@ -3,10 +3,10 @@ use rayon::prelude::*;
 
 type Vec3 = glam::Vec3A;
 
-const WIDTH: u32 = 1920;
-const HEIGHT: u32 = 1080;
+const WIDTH: u32 = 1280;
+const HEIGHT: u32 = 720;
 const IMAGE_SIZE: u32 = WIDTH * HEIGHT;
-const MAX_DEPTH: f32 = 20.0f32;
+const MAX_DEPTH: f32 = 50.0f32;
 const INV_WIDTH: f32 = 1.0 / WIDTH as f32;
 const INV_HEIGHT: f32 = 1.0 / HEIGHT as f32;
 
@@ -64,6 +64,7 @@ impl Sdf for Cube {
     }
 }
 
+
 fn to_color(col: Vec3) -> [u8; 3] {
     let ir = (255.99 * col.x) as u8;
     let ig = (255.99 * col.y) as u8;
@@ -71,8 +72,6 @@ fn to_color(col: Vec3) -> [u8; 3] {
 
     [ir, ig, ib]
 }
-
-
 
 fn trace_ray(ray: Ray, shapes: &Vec<&dyn Sdf>) -> Vec3 {
     let mut p = ray.position;
