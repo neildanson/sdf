@@ -49,7 +49,7 @@ struct Cube {
 impl Sdf for Cube {
     fn distance(&self, point: Vec3) -> f32 {
         let q = (point - self.center).abs() - Vec3::splat(self.size);
-        q.max(Vec3::ZERO).length() + q.max(Vec3::ZERO).min(Vec3::ZERO).length()
+        q.max(Vec3::ZERO).length() + q.max_element().min(0.0)
     }
 }
 

@@ -6,3 +6,4 @@ edition = "2024"
 [dependencies]
 glam = "0.29.2"
 image = "0.25.5"
+rayon = "1.10.0"
