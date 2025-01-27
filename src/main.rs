@@ -129,7 +129,7 @@ fn main() {
         size: 0.75,
     };
 
-    let and = Not {
+    let and = And {
         t: cube,
         u: sphere,
     };
