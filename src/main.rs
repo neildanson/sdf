@@ -12,10 +12,10 @@ const MAX_DEPTH: f32 = 50.0f32;
 const INV_WIDTH: f32 = 1.0 / WIDTH as f32;
 const INV_HEIGHT: f32 = 1.0 / HEIGHT as f32;
 
-const MIN_DISTANCE : f32 = 0.001;
-const VEC3_EPSILON_X : Vec3 = Vec3::new(MIN_DISTANCE, 0.0, 0.0);
-const VEC3_EPSILON_Y : Vec3 = Vec3::new(0.0, MIN_DISTANCE, 0.0);
-const VEC3_EPSILON_Z : Vec3 = Vec3::new(0.0, 0.0, MIN_DISTANCE);
+const MIN_DISTANCE: f32 = 0.001;
+const VEC3_EPSILON_X: Vec3 = Vec3::new(MIN_DISTANCE, 0.0, 0.0);
+const VEC3_EPSILON_Y: Vec3 = Vec3::new(0.0, MIN_DISTANCE, 0.0);
+const VEC3_EPSILON_Z: Vec3 = Vec3::new(0.0, 0.0, MIN_DISTANCE);
 
 #[derive(Debug)]
 struct Ray {
@@ -34,7 +34,7 @@ impl Ray {
 
 trait Sdf: Sync + Send {
     fn distance(&self, point: Vec3) -> f32;
-    fn normal(&self, point: Vec3) -> Vec3 {        
+    fn normal(&self, point: Vec3) -> Vec3 {
         let normal = Vec3::new(
             self.distance(point + VEC3_EPSILON_X) - self.distance(point - VEC3_EPSILON_X),
             self.distance(point + VEC3_EPSILON_Y) - self.distance(point - VEC3_EPSILON_Y),
@@ -66,7 +66,6 @@ impl Sdf for Cube {
         q.max(Vec3::ZERO).length() + q.max_element().min(0.0)
     }
 }
-
 
 fn to_color(col: Vec3) -> [u8; 3] {
     let ir = (255.99 * col.x) as u8;
@@ -113,9 +112,8 @@ fn main() {
     let aspect_ratio = WIDTH as f32 / HEIGHT as f32;
     let start = std::time::Instant::now();
 
-    let result: Vec<_> = (0..IMAGE_SIZE)
+    let result: Vec<Vec3> = (0..IMAGE_SIZE)
         .into_par_iter()
-        //.chunks(8)
         .map(|pos| {
             let x = pos % WIDTH;
             let y = pos / WIDTH;
