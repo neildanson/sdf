@@ -66,6 +66,28 @@ impl Sdf for Cube {
     }
 }
 
+struct And<T : Sdf, U : Sdf> {
+    t: T,
+    u: U,
+}
+
+impl<T:Sdf, U:Sdf> Sdf for And<T, U> {
+    fn distance(&self, point: Vec3) -> FLOAT {
+        self.t.distance(point).max(self.u.distance(point))
+    }
+}
+
+struct Not<T : Sdf, U : Sdf> {
+    t: T,
+    u: U,
+}
+
+impl<T:Sdf, U:Sdf> Sdf for Not<T, U> {
+    fn distance(&self, point: Vec3) -> FLOAT {
+        self.t.distance(point).max(-self.u.distance(point))
+    }
+}
+
 fn to_color(col: Vec3) -> [u8; 3] {
     let ir = (255.99 * col.x) as u8;
     let ig = (255.99 * col.y) as u8;
@@ -98,16 +120,22 @@ fn trace_ray(ray: Ray, shapes: &Vec<&dyn Sdf>) -> Vec3 {
 }
 fn main() {
     let sphere = Sphere {
-        center: Vec3::new(1.0, 0.0, 3.0),
+        center: Vec3::new(0.0, 0.0, 3.0),
         radius: 1.0,
     };
 
     let cube = Cube {
-        center: Vec3::new(-1.0, 0.0, 3.0),
+        center: Vec3::new(0.0, 0.0, 3.0),
         size: 0.75,
     };
 
-    let shapes: Vec<&dyn Sdf> = vec![&sphere, &cube];
+    let and = Not {
+        t: cube,
+        u: sphere,
+    };
+
+
+    let shapes: Vec<&dyn Sdf> = vec![&and];
     let aspect_ratio = WIDTH as FLOAT / HEIGHT as FLOAT;
     let mut result = vec![Vec3::ZERO; IMAGE_SIZE as usize];
     let start = std::time::Instant::now();
@@ -117,8 +145,8 @@ fn main() {
         .map(|pos| {
             let x = pos % WIDTH;
             let y = pos / WIDTH;
-            let x = (x as FLOAT) * INV_WIDTH * 2.0 - 1.0;
-            let y = (y as FLOAT) * INV_HEIGHT * 2.0 - 1.0;
+            let x = (x as FLOAT) * (INV_WIDTH * 2.0) - 1.0;
+            let y = (y as FLOAT) * (INV_HEIGHT * 2.0) - 1.0;
             let x = x * aspect_ratio;
             let ray = Ray::new(Vec3::ZERO, Vec3::new(x, y, 1.0).normalize());
             trace_ray(ray, &shapes)
