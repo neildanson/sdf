@@ -1,11 +1,12 @@
-use image::RgbImage;
+use minifb::{Key, Window, WindowOptions};
+use rand::prelude::*;
 use rayon::prelude::*;
 
 type Vec3 = glam::Vec3A;
 type FLOAT = f32;
 
-const WIDTH: u32 = 1920;
-const HEIGHT: u32 = 1080;
+const WIDTH: u32 = 1280;
+const HEIGHT: u32 = 720;
 const IMAGE_SIZE: u32 = WIDTH * HEIGHT;
 const MAX_DEPTH: FLOAT = 50.0;
 const INV_WIDTH: FLOAT = 1.0 / WIDTH as FLOAT;
@@ -66,34 +67,35 @@ impl Sdf for Cube {
     }
 }
 
-struct And<T : Sdf, U : Sdf> {
+struct And<T: Sdf, U: Sdf> {
     t: T,
     u: U,
 }
 
-impl<T:Sdf, U:Sdf> Sdf for And<T, U> {
+impl<T: Sdf, U: Sdf> Sdf for And<T, U> {
     fn distance(&self, point: Vec3) -> FLOAT {
         self.t.distance(point).max(self.u.distance(point))
     }
 }
 
-struct Not<T : Sdf, U : Sdf> {
+struct Not<T: Sdf, U: Sdf> {
     t: T,
     u: U,
 }
 
-impl<T:Sdf, U:Sdf> Sdf for Not<T, U> {
+impl<T: Sdf, U: Sdf> Sdf for Not<T, U> {
     fn distance(&self, point: Vec3) -> FLOAT {
         self.t.distance(point).max(-self.u.distance(point))
     }
 }
 
-fn to_color(col: Vec3) -> [u8; 3] {
-    let ir = (255.99 * col.x) as u8;
-    let ig = (255.99 * col.y) as u8;
-    let ib = (255.99 * col.z) as u8;
+fn to_color(col: Vec3) -> u32 {
+    let ir = (255.99 * col.x) as u32;
+    let ig = (255.99 * col.y) as u32;
+    let ib = (255.99 * col.z) as u32;
 
-    [ir, ig, ib]
+    let color = (ir << 16) | (ig << 8) | ib;
+    color
 }
 
 fn trace_ray(ray: Ray, shapes: &Vec<&dyn Sdf>) -> Vec3 {
@@ -119,6 +121,15 @@ fn trace_ray(ray: Ray, shapes: &Vec<&dyn Sdf>) -> Vec3 {
     Vec3::ZERO
 }
 fn main() {
+    let mut window = Window::new(
+        "Test - ESC to exit",
+        WIDTH as usize,
+        HEIGHT as usize,
+        WindowOptions::default(),
+    )
+    .unwrap_or_else(|e| {
+        panic!("{}", e);
+    });
     let sphere = Sphere {
         center: Vec3::new(0.0, 0.0, 3.0),
         radius: 1.0,
@@ -129,39 +140,36 @@ fn main() {
         size: 0.75,
     };
 
-    let and = And {
-        t: cube,
-        u: sphere,
-    };
-
+    let and = And { t: cube, u: sphere };
 
     let shapes: Vec<&dyn Sdf> = vec![&and];
-    let aspect_ratio = WIDTH as FLOAT / HEIGHT as FLOAT;
-    let mut result = vec![Vec3::ZERO; IMAGE_SIZE as usize];
-    let start = std::time::Instant::now();
+    let aspect_ratio = WIDTH as FLOAT / HEIGHT as FLOAT;    
+    let mut buffer: Vec<u32> = vec![0; IMAGE_SIZE as usize];
+    let mut backbuffer: Vec<Vec3> = vec![Vec3::ZERO; IMAGE_SIZE as usize];
+    while window.is_open() && !window.is_key_down(Key::Escape) {
+        let start = std::time::Instant::now();
+        (0..IMAGE_SIZE)
+            .into_par_iter()
+            .map(|pos| {
+                let x = pos % WIDTH;
+                let y = pos / WIDTH;
+                let x = (x as FLOAT) * (INV_WIDTH * 2.0) - 1.0;
+                let y = (y as FLOAT) * (INV_HEIGHT * 2.0) - 1.0;
+                let x = x * aspect_ratio;
+                let ray = Ray::new(Vec3::ZERO, Vec3::new(x, y, 1.0).normalize());
+                trace_ray(ray, &shapes)
+            })
+            .collect_into_vec(&mut backbuffer);
 
-    (0..IMAGE_SIZE)
-        .into_par_iter()
-        .map(|pos| {
-            let x = pos % WIDTH;
-            let y = pos / WIDTH;
-            let x = (x as FLOAT) * (INV_WIDTH * 2.0) - 1.0;
-            let y = (y as FLOAT) * (INV_HEIGHT * 2.0) - 1.0;
-            let x = x * aspect_ratio;
-            let ray = Ray::new(Vec3::ZERO, Vec3::new(x, y, 1.0).normalize());
-            trace_ray(ray, &shapes)
-        })
-        .collect_into_vec(&mut result);
+        let elapsed = start.elapsed();
+        println!("Elapsed: {}ms", elapsed.as_millis());
+        for (idx, i) in buffer.iter_mut().enumerate() {
+            let color = backbuffer[idx];
+            *i = to_color(color);
+        }
 
-    let elapsed = start.elapsed();
-
-    let mut img = RgbImage::new(WIDTH, HEIGHT);
-    for (i, pixel) in result.iter().enumerate() {
-        let x = i as u32 % WIDTH;
-        let y = i as u32 / WIDTH;
-        let pixel = to_color(*pixel);
-        img.put_pixel(x, y, image::Rgb(pixel));
+        window
+            .update_with_buffer(&buffer, WIDTH as usize, HEIGHT as usize)
+            .unwrap();
     }
-    println!("Elapsed: {:?}", elapsed);
-    img.save("output.png").unwrap();
 }
