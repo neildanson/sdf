@@ -5,9 +5,9 @@ use rayon::prelude::*;
 type Vec3 = glam::Vec3A;
 type FLOAT = f32;
 
-const WIDTH: u32 = 1280;
-const HEIGHT: u32 = 720;
-const IMAGE_SIZE: u32 = WIDTH * HEIGHT;
+const WIDTH: usize = 1280;
+const HEIGHT: usize = 720;
+const IMAGE_SIZE: usize = WIDTH * HEIGHT;
 const MAX_DEPTH: FLOAT = 50.0;
 const INV_WIDTH: FLOAT = 1.0 / WIDTH as FLOAT;
 const INV_HEIGHT: FLOAT = 1.0 / HEIGHT as FLOAT;
@@ -123,8 +123,8 @@ fn trace_ray(ray: Ray, shapes: &Vec<&dyn Sdf>) -> Vec3 {
 fn main() {
     let mut window = Window::new(
         "Test - ESC to exit",
-        WIDTH as usize,
-        HEIGHT as usize,
+        WIDTH,
+        HEIGHT,
         WindowOptions::default(),
     )
     .unwrap_or_else(|e| {
@@ -144,8 +144,8 @@ fn main() {
 
     let shapes: Vec<&dyn Sdf> = vec![&and];
     let aspect_ratio = WIDTH as FLOAT / HEIGHT as FLOAT;    
-    let mut buffer: Vec<u32> = vec![0; IMAGE_SIZE as usize];
-    let mut backbuffer: Vec<Vec3> = vec![Vec3::ZERO; IMAGE_SIZE as usize];
+    let mut buffer: Vec<u32> = vec![0; IMAGE_SIZE];
+    let mut backbuffer: Vec<Vec3> = vec![Vec3::ZERO; IMAGE_SIZE];
     let d_time = std::time::Instant::now();
     while window.is_open() && !window.is_key_down(Key::Escape) {
         let start = std::time::Instant::now();
@@ -172,7 +172,7 @@ fn main() {
         }
 
         window
-            .update_with_buffer(&buffer, WIDTH as usize, HEIGHT as usize)
+            .update_with_buffer(&buffer, WIDTH, HEIGHT)
             .unwrap();
     }
 }
