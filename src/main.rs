@@ -146,8 +146,10 @@ fn main() {
     let aspect_ratio = WIDTH as FLOAT / HEIGHT as FLOAT;    
     let mut buffer: Vec<u32> = vec![0; IMAGE_SIZE as usize];
     let mut backbuffer: Vec<Vec3> = vec![Vec3::ZERO; IMAGE_SIZE as usize];
+    let d_time = std::time::Instant::now();
     while window.is_open() && !window.is_key_down(Key::Escape) {
         let start = std::time::Instant::now();
+        let origin = Vec3::new((d_time.elapsed().as_secs_f32() * 10.0).sin() * 2.0, 0.0, 0.0);
         (0..IMAGE_SIZE)
             .into_par_iter()
             .map(|pos| {
@@ -156,7 +158,8 @@ fn main() {
                 let x = (x as FLOAT) * (INV_WIDTH * 2.0) - 1.0;
                 let y = (y as FLOAT) * (INV_HEIGHT * 2.0) - 1.0;
                 let x = x * aspect_ratio;
-                let ray = Ray::new(Vec3::ZERO, Vec3::new(x, y, 1.0).normalize());
+
+                let ray = Ray::new(origin, Vec3::new(x, y, 1.0).normalize());
                 trace_ray(ray, &shapes)
             })
             .collect_into_vec(&mut backbuffer);
