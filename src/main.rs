@@ -1,5 +1,6 @@
 use minifb::{Key, Window, WindowOptions};
 use rand::prelude::*;
+use rand::prelude::*;
 use rayon::prelude::*;
 
 type Vec3 = glam::Vec3A;
@@ -29,6 +30,18 @@ impl Ray {
             position,
             direction,
         }
+    }
+}
+
+struct HitRecord {
+    t: f32,
+    p: Vec3,
+    normal: Vec3,
+}
+
+impl HitRecord {
+    fn new(t: f32, p: Vec3, normal: Vec3) -> HitRecord {
+        HitRecord { t, p, normal }
     }
 }
 
@@ -98,7 +111,21 @@ fn to_color(col: Vec3) -> u32 {
     color
 }
 
-fn trace_ray(ray: Ray, shapes: &Vec<&dyn Sdf>) -> Vec3 {
+fn random_in_unit_sphere() -> Vec3 {
+    let mut rng = rand::rng();
+    loop {
+        let p = Vec3::new(rng.random_range(-1.0..1.0), rng.random_range(-1.0..1.0), rng.random_range(-1.0..1.0));
+        if p.length_squared() < 1.0 {
+            return p;
+        }
+    }
+}
+
+
+fn trace_ray(ray: Ray, shapes: &[Box<dyn Sdf>], depth : usize) -> Vec3 {
+    if depth > 5 {
+        return Vec3::ZERO;
+    }
     let mut p = ray.position;
     loop {
         let mut min_distance = FLOAT::MAX;
@@ -114,9 +141,11 @@ fn trace_ray(ray: Ray, shapes: &Vec<&dyn Sdf>) -> Vec3 {
         p = p + ray.direction * min_distance;
         if min_distance < MIN_DISTANCE {
             let normal = shapes[0].normal(p);
-            let color_vec = (normal + Vec3::ONE) * 0.5;
-            return color_vec;
+            let hit = HitRecord::new(min_distance, p, normal);
+            let target = hit.p + hit.normal + random_in_unit_sphere();
+            return 0.5 * trace_ray(Ray::new(hit.p, target - hit.p), shapes, depth + 1);
         }
+
     }
     Vec3::ZERO
 }
@@ -130,26 +159,32 @@ fn main() {
     .unwrap_or_else(|e| {
         panic!("{}", e);
     });
-    let sphere = Sphere {
-        center: Vec3::new(0.0, 0.0, 3.0),
-        radius: 1.0,
-    };
 
-    let cube = Cube {
-        center: Vec3::new(0.0, 0.0, 3.0),
-        size: 0.75,
-    };
+    let mut shapes :Vec<Box<dyn Sdf> >= Vec::new();
 
-    let and = And { t: cube, u: sphere };
 
-    let shapes: Vec<&dyn Sdf> = vec![&and];
+    for z in 3 .. 6   {
+        let sphere = Sphere {
+            center: Vec3::new(0.0, 0.0, z as FLOAT),
+            radius: 1.0,
+        };
+    
+        let cube = Cube {
+            center: Vec3::new(0.0, 0.0, z as FLOAT),
+            size: 0.75,
+        };
+    
+        let and = And { t: cube, u: sphere };
+        shapes.push(Box::new(and));
+    }
+
     let aspect_ratio = WIDTH as FLOAT / HEIGHT as FLOAT;    
     let mut buffer: Vec<u32> = vec![0; IMAGE_SIZE];
     let mut backbuffer: Vec<Vec3> = vec![Vec3::ZERO; IMAGE_SIZE];
     let d_time = std::time::Instant::now();
     while window.is_open() && !window.is_key_down(Key::Escape) {
         let start = std::time::Instant::now();
-        let origin = Vec3::new((d_time.elapsed().as_secs_f32() * 10.0).sin() * 2.0, 0.0, 0.0);
+        let origin = Vec3::new((d_time.elapsed().as_secs_f32() * 10.0).sin() * 2.0, (d_time.elapsed().as_secs_f32() * 10.0).cos(), 0.0);
         (0..IMAGE_SIZE)
             .into_par_iter()
             .map(|pos| {
@@ -160,7 +195,7 @@ fn main() {
                 let x = x * aspect_ratio;
 
                 let ray = Ray::new(origin, Vec3::new(x, y, 1.0).normalize());
-                trace_ray(ray, &shapes)
+                trace_ray(ray, &shapes, 0)
             })
             .collect_into_vec(&mut backbuffer);
 
