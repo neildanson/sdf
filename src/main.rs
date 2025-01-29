@@ -147,7 +147,10 @@ fn trace_ray(ray: Ray, shapes: &[Box<dyn Sdf>], depth : usize) -> Vec3 {
         }
 
     }
-    Vec3::ZERO
+    let unit_direction = ray.direction.normalize();
+    let t = 0.5 * (unit_direction.y + 1.0);
+    (1.0 - t) * Vec3::ONE + t * Vec3::new(0.5, 0.7, 1.0)
+    //Vec3::ZERO
 }
 fn main() {
     let mut window = Window::new(
