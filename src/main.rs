@@ -1,13 +1,12 @@
-use minifb::{Key, Window, WindowOptions};
-use rand::prelude::*;
+use minifb::{Key, Scale, Window, WindowOptions};
 use rand::prelude::*;
 use rayon::prelude::*;
 
 type Vec3 = glam::Vec3A;
 type FLOAT = f32;
 
-const WIDTH: usize = 1280;
-const HEIGHT: usize = 720;
+const WIDTH: usize = 640;
+const HEIGHT: usize = 360;
 const IMAGE_SIZE: usize = WIDTH * HEIGHT;
 const MAX_DEPTH: FLOAT = 50.0;
 const INV_WIDTH: FLOAT = 1.0 / WIDTH as FLOAT;
@@ -157,7 +156,10 @@ fn main() {
         "Test - ESC to exit",
         WIDTH,
         HEIGHT,
-        WindowOptions::default(),
+        WindowOptions { 
+            scale: Scale::X4,
+            .. WindowOptions::default() 
+        },
     )
     .unwrap_or_else(|e| {
         panic!("{}", e);
