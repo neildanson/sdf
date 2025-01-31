@@ -7,8 +7,8 @@ use rayon::prelude::*;
 type Vec3 = glam::Vec3A;
 type FLOAT = f32;
 
-const WIDTH: usize = 640;
-const HEIGHT: usize = 360;
+const WIDTH: usize = 320;
+const HEIGHT: usize = 160;
 const IMAGE_SIZE: usize = WIDTH * HEIGHT;
 const MAX_DEPTH: FLOAT = 50.0;
 const INV_WIDTH: FLOAT = 1.0 / WIDTH as FLOAT;
@@ -18,6 +18,7 @@ const MIN_DISTANCE: FLOAT = 0.001;
 const VEC3_EPSILON_X: Vec3 = Vec3::new(MIN_DISTANCE, 0.0, 0.0);
 const VEC3_EPSILON_Y: Vec3 = Vec3::new(0.0, MIN_DISTANCE, 0.0);
 const VEC3_EPSILON_Z: Vec3 = Vec3::new(0.0, 0.0, MIN_DISTANCE);
+const SAMPLES: usize = 10;
 
 thread_local! {
     static RNG: RefCell<ThreadRng> = RefCell::new(rand::rng());
@@ -203,9 +204,17 @@ fn main() {
                 let x = (x as FLOAT) * (INV_WIDTH * 2.0) - 1.0;
                 let y = (y as FLOAT) * (INV_HEIGHT * 2.0) - 1.0;
                 let x = x * aspect_ratio;
-
-                let ray = Ray::new(origin, Vec3::new(x, y, 1.0).normalize());
-                trace_ray(ray, &shapes, 0)
+                let mut rng = rand::rng();
+                let color = (0 .. SAMPLES).into_iter().fold(Vec3::ZERO, |c, _| {
+                    let u = (x as f32 + rng.random::<f32>()) / WIDTH as f32;
+                    let v = (y as f32 + rng.random::<f32>()) / HEIGHT as f32;
+                    let ray = Ray::new(origin, Vec3::new(x, y, 1.0).normalize());
+                    trace_ray(ray, &shapes, 0) + c
+                });
+    
+                color / SAMPLES as f32
+                //let ray = Ray::new(origin, Vec3::new(x, y, 1.0).normalize());
+                //trace_ray(ray, &shapes, 0)
             })
             .collect_into_vec(&mut backbuffer);
 
