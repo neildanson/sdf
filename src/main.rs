@@ -1,3 +1,5 @@
+use std::cell::RefCell;
+
 use minifb::{Key, Scale, Window, WindowOptions};
 use rand::prelude::*;
 use rayon::prelude::*;
@@ -16,6 +18,10 @@ const MIN_DISTANCE: FLOAT = 0.001;
 const VEC3_EPSILON_X: Vec3 = Vec3::new(MIN_DISTANCE, 0.0, 0.0);
 const VEC3_EPSILON_Y: Vec3 = Vec3::new(0.0, MIN_DISTANCE, 0.0);
 const VEC3_EPSILON_Z: Vec3 = Vec3::new(0.0, 0.0, MIN_DISTANCE);
+
+thread_local! {
+    static RNG: RefCell<ThreadRng> = RefCell::new(rand::rng());
+}
 
 #[derive(Debug)]
 struct Ray {
@@ -111,13 +117,12 @@ fn to_color(col: Vec3) -> u32 {
 }
 
 fn random_in_unit_sphere() -> Vec3 {
-    let mut rng = rand::rng();
-    loop {
+    RNG.with_borrow_mut(|rng| loop {
         let p = Vec3::new(rng.random_range(-1.0..1.0), rng.random_range(-1.0..1.0), rng.random_range(-1.0..1.0));
         if p.length_squared() < 1.0 {
             return p;
         }
-    }
+    })
 }
 
 
