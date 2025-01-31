@@ -206,8 +206,8 @@ fn main() {
                 let x = x * aspect_ratio;
                 let color = (0 .. SAMPLES).into_iter().fold(Vec3::ZERO, |c, _| {
                     let (x, y) = RNG.with_borrow_mut(|rng| {
-                        let u = (x as f32 + rng.random::<f32>());
-                        let v = (y as f32 + rng.random::<f32>());
+                        let u = x + rng.random_range(-0.01..0.01);
+                        let v = y + rng.random_range(-0.01..0.01);
                         (u, v)});
                     let ray = Ray::new(origin, Vec3::new(x, y, 1.0).normalize());
                     trace_ray(ray, &shapes, 0) + c
