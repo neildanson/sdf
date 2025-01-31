@@ -7,8 +7,8 @@ use rayon::prelude::*;
 type Vec3 = glam::Vec3A;
 type FLOAT = f32;
 
-const WIDTH: usize = 320;
-const HEIGHT: usize = 160;
+const WIDTH: usize = 400;
+const HEIGHT: usize = 300;
 const IMAGE_SIZE: usize = WIDTH * HEIGHT;
 const MAX_DEPTH: FLOAT = 50.0;
 const INV_WIDTH: FLOAT = 1.0 / WIDTH as FLOAT;
@@ -19,6 +19,8 @@ const VEC3_EPSILON_X: Vec3 = Vec3::new(MIN_DISTANCE, 0.0, 0.0);
 const VEC3_EPSILON_Y: Vec3 = Vec3::new(0.0, MIN_DISTANCE, 0.0);
 const VEC3_EPSILON_Z: Vec3 = Vec3::new(0.0, 0.0, MIN_DISTANCE);
 const SAMPLES: usize = 10;
+const RANDOM_SAMPLES_X : FLOAT = WIDTH as FLOAT / (100_000) as FLOAT;
+const RANDOM_SAMPLES_Y : FLOAT = HEIGHT as FLOAT / (100_000) as FLOAT;
 
 thread_local! {
     static RNG: RefCell<ThreadRng> = RefCell::new(rand::rng());
@@ -40,13 +42,13 @@ impl Ray {
 }
 
 struct HitRecord {
-    t: f32,
+    t: FLOAT,
     p: Vec3,
     normal: Vec3,
 }
 
 impl HitRecord {
-    fn new(t: f32, p: Vec3, normal: Vec3) -> HitRecord {
+    fn new(t: FLOAT, p: Vec3, normal: Vec3) -> HitRecord {
         HitRecord { t, p, normal }
     }
 }
@@ -163,7 +165,7 @@ fn main() {
         WIDTH,
         HEIGHT,
         WindowOptions { 
-            scale: Scale::X4,
+            scale: Scale::X2,
             .. WindowOptions::default() 
         },
     )
@@ -206,16 +208,14 @@ fn main() {
                 let x = x * aspect_ratio;
                 let color = (0 .. SAMPLES).into_iter().fold(Vec3::ZERO, |c, _| {
                     let (x, y) = RNG.with_borrow_mut(|rng| {
-                        let u = x + rng.random_range(-0.01..0.01);
-                        let v = y + rng.random_range(-0.01..0.01);
+                        let u = x + rng.random_range(-RANDOM_SAMPLES_X..RANDOM_SAMPLES_X);
+                        let v = y + rng.random_range(-RANDOM_SAMPLES_Y..RANDOM_SAMPLES_Y);
                         (u, v)});
                     let ray = Ray::new(origin, Vec3::new(x, y, 1.0).normalize());
                     trace_ray(ray, &shapes, 0) + c
                 });
     
-                color / SAMPLES as f32
-                //let ray = Ray::new(origin, Vec3::new(x, y, 1.0).normalize());
-                //trace_ray(ray, &shapes, 0)
+                color / SAMPLES as FLOAT
             })
             .collect_into_vec(&mut backbuffer);
 
